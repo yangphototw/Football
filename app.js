@@ -1869,6 +1869,13 @@ function setupEventListeners() {
                 if (betAmountEl) betAmountEl.value = amount;
             }
 
+            // Auto-calculate total amount for each-100 if empty or zero
+            if (allocType === 'each-100' && (isNaN(amount) || amount === 0)) {
+                amount = checkedBettors.length * 100;
+                const betAmountEl = document.getElementById('bet-amount');
+                if (betAmountEl) betAmountEl.value = amount;
+            }
+
             if (isNaN(amount) || amount <= 0) {
                 alert('請輸入下注總本金，或在下方填寫參與成員的出資金額！');
                 return;
@@ -1879,6 +1886,10 @@ function setupEventListeners() {
             if (allocType === 'equal') {
                 bettors.forEach(b => {
                     finalBettors.push({ memberId: b.memberId, amount: Math.floor(b.val) });
+                });
+            } else if (allocType === 'each-100') {
+                bettors.forEach(b => {
+                    finalBettors.push({ memberId: b.memberId, amount: 100 });
                 });
             } else if (allocType === 'ratio') {
                 let sumRatio = bettors.reduce((sum, b) => sum + b.val, 0);
