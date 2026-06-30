@@ -1062,32 +1062,54 @@ input:focus, select:focus {
     }
 
     .form-row {
-        flex-direction: column;
-        gap: 0;
+        flex-direction: row;
+        gap: 8px;
     }
 
-    /* Keep parlay legs stacked as clean responsive cards in mobile */
+    .form-row .form-group {
+        margin-bottom: 12px;
+    }
+
+    /* Shrink input padding in mobile to maximize horizontal space */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+        padding: 8px 10px;
+        font-size: var(--fs-1); /* 12px */
+    }
+
+    /* Parlay dynamic legs kept in precise, compact horizontal layout */
     .parlay-leg.form-row {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 8px !important;
-        background: rgba(255, 255, 255, 0.02);
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 16px !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin-bottom: 8px !important;
     }
 
-    .parlay-leg > div {
-        width: 100% !important;
-        flex: none !important;
+    .parlay-leg > div:nth-child(1) {
+        flex: 1.5 !important;
+        width: auto !important;
+    }
+
+    .parlay-leg > div:nth-child(2) {
+        flex: 1.2 !important;
+        width: auto !important;
+    }
+
+    .parlay-leg > div:nth-child(3) {
+        flex: 0.8 !important;
+        width: auto !important;
     }
 
     .parlay-leg .btn-remove-leg {
-        width: 100% !important;
-        height: 38px !important;
-        margin-top: 4px;
-        border-radius: 6px;
+        width: 36px !important;
+        height: 36px !important;
+        margin-top: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
     /* 2x2 Grid allocation selector in mobile to prevent overflow */
