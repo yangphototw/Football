@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世足運彩狂熱記帳簿 ⚽🏆 - 小白代購記帳系統</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-trophy text-gold animated-bounce"></i>
+                    <span>世足運彩記帳</span>
+                </div>
+                <div class="agent-tag">小白代購版</div>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#dashboard" class="nav-item active" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>控制台儀表板</span>
+                </a>
+                <a href="#members" class="nav-item" data-tab="members">
+                    <i class="fa-solid fa-users"></i>
+                    <span>成員與錢包</span>
+                </a>
+                <a href="#bets" class="nav-item" data-tab="bets">
+                    <i class="fa-solid fa-ticket"></i>
+                    <span>下注登記</span>
+                </a>
+                <a href="#history" class="nav-item" data-tab="history">
+                    <i class="fa-solid fa-history"></i>
+                    <span>注單與歷史</span>
+                </a>
+                <a href="#summary" class="nav-item" data-tab="summary">
+                    <i class="fa-solid fa-calculator"></i>
+                    <span>對帳與結算</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button id="btnShareLine" class="btn btn-share-line">
+                    <i class="fa-brands fa-line"></i> 複製 LINE 報表
+                </button>
+                <div class="footer-version">v1.0.0 &copy; 2026 世足神預測</div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-title">
+                    <h1 id="page-title">控制台儀表板</h1>
+                    <p id="page-subtitle">即時監控代購運彩資金、投注狀態與損益分析</p>
+                </div>
+                
+                <div class="header-actions">
+                    <button id="btnQuickDeposit" class="btn btn-primary-outline">
+                        <i class="fa-solid fa-wallet"></i> 快速儲值
+                    </button>
+                    <button id="btnQuickBet" class="btn btn-primary">
+                        <i class="fa-solid fa-plus"></i> 新增注單
+                    </button>
+                    <div class="backup-actions">
+                        <button id="btnThemeToggle" class="btn btn-icon" title="切換主題">
+                            <i class="fa-solid fa-moon"></i>
+                        </button>
+                        <button id="btnSettings" class="btn btn-icon" title="雲端同步設定">
+                            <i class="fa-solid fa-gear text-gold"></i>
+                        </button>
+                        <button id="btnExportData" class="btn btn-icon" title="匯出資料">
+                            <i class="fa-solid fa-file-export"></i>
+                        </button>
+                        <button id="btnImportData" class="btn btn-icon" title="匯入資料">
+                            <i class="fa-solid fa-file-import"></i>
+                        </button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;">
+                    </div>
+                </div>
+            </header>
+
+            <!-- Cloud RLS Policy Warning Banner -->
+            <div id="cloud-warning-banner" class="hidden" style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--color-red); color: var(--color-red); padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-size: var(--fs-2); display: flex; align-items: center; justify-content: space-between; gap: 12px; backdrop-filter: blur(10px); width: 100%;">
+                <span><i class="fa-solid fa-triangle-exclamation"></i> <b>雲端同步異常：</b> 資料庫寫入權限不足（RLS 政策未開放），資料無法儲存至雲端，重整網頁後可能遗失！</span>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('btnSettings').click()" style="color: var(--color-red); border-color: var(--color-red); background: transparent; padding: 4px 10px; font-size: var(--fs-1);">查看解決方案</button>
+            </div>
+
+            <!-- Content Tabs -->
+            <div class="tab-content-wrapper">
+                
+                <!-- Tab: Dashboard -->
+                <section id="tab-dashboard" class="tab-content active">
+                    <!-- Top stats cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card gold-border">
+                            <div class="stat-icon bg-gold-trans">
+                                <i class="fa-solid fa-vault"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">小白保管總現金</span>
+                                <span class="stat-value" id="stat-total-cash">$0</span>
+                                <span class="stat-desc">所有成員可用餘額總和</span>
+                            </div>
+                        </div>
+                        <div class="stat-card green-border">
+                            <div class="stat-icon bg-green-trans">
+                                <i class="fa-solid fa-circle-dollar-to-slot"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">在途投注中金額</span>
+                                <span class="stat-value" id="stat-pending-bet">$0</span>
+                                <span class="stat-desc">尚未開獎的注單總本金</span>
+                            </div>
+                        </div>
+                        <div class="stat-card blue-border">
+                            <div class="stat-icon bg-blue-trans">
+                                <i class="fa-solid fa-chart-pie"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">總投注次數</span>
+                                <span class="stat-value" id="stat-bet-count">0 次</span>
+                                <span class="stat-desc">累計登記的運彩張數</span>
+                            </div>
+                        </div>
+                        <div class="stat-card red-border" id="stat-profit-card">
+                            <div class="stat-icon bg-red-trans" id="stat-profit-icon">
+                                <i class="fa-solid fa-face-smile"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">群組總損益</span>
+                                <span class="stat-value" id="stat-total-profit">$0</span>
+                                <span class="stat-desc" id="stat-profit-desc">所有人相較於入金的淨損益</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard row 2 -->
+                    <div class="dashboard-row">
+                        <!-- Chart section -->
+                        <div class="dashboard-col col-8 card">
+                            <div class="card-header">
+                                <h3>📊 成員資產與損益分佈</h3>
+                                <div class="card-actions">
+                                    <span class="badge badge-success">即時更新</span>
+                                </div>
+                            </div>
+                            <div class="card-body chart-container">
+                                <canvas id="chartProfitability"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick status section -->
+                        <div class="dashboard-col col-4 card">
+                            <div class="card-header">
+                                <h3>🔥 熱門下注成員</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="leaderboard" id="dashboard-leaderboard">
+                                    <!-- Dynamic content -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard row 3 -->
+                    <div class="dashboard-row">
+                        <div class="dashboard-col col-12 card">
+                            <div class="card-header">
+                                <h3>⏳ 待開獎之注單 (追蹤中)</h3>
+                                <button class="btn btn-sm btn-primary-outline" onclick="window.location.hash='#history'; document.querySelector('[data-tab=history]').click();">
+                                    查看全部
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>下注日期</th>
+                                                <th>賽事名稱</th>
+                                                <th>投注內容</th>
+                                                <th>賠率</th>
+                                                <th>總金額</th>
+                                                <th>投注金主比例</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dashboard-pending-bets">
+                                            <!-- Dynamic content -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tab: Members -->
+                <section id="tab-members" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>👥 成員名單管理</h3>
+                            <button id="btnAddMember" class="btn btn-primary btn-sm">
+                                <i class="fa-solid fa-plus"></i> 新增成員
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="member-grid" id="member-cards-container">
+                                <!-- Dynamic member cards -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tab: Bets (下注登記) -->
+                <section id="tab-bets" class="tab-content">
+                    <div class="card bet-form-card">
+                        <div class="card-header">
+                            <h3>✍️ 登記新運彩注單</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="bet-form">
+                                <div class="form-group">
+                                    <label><i class="fa-solid fa-layer-group text-green"></i> 投注賽事與玩法 (可點 + 新增串關)</label>
+                                    <div id="parlay-legs-container">
+                                        <!-- Dynamic parlay legs -->
+                                        <div class="parlay-leg form-row" style="margin-bottom: 12px; display: flex; gap: 10px; align-items: center;">
+                                            <div style="flex: 2;">
+                                                <input type="text" class="leg-match-name" placeholder="賽事名稱，例如：巴西 vs 法國" required>
+                                            </div>
+                                            <div style="flex: 2;">
+                                                <input type="text" class="leg-bet-type" placeholder="玩法預測，例如：讓分主勝" required>
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <input type="number" class="leg-odds" step="0.01" min="1.00" placeholder="賠率" required>
+                                            </div>
+                                            <button type="button" class="btn btn-icon btn-remove-leg" style="height: 42px; width: 42px; flex-shrink: 0; display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--color-red); color: var(--color-red);" title="移除此關">
+                                                <i class="fa-solid fa-trash-can" style="font-size: 14px;"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnAddParlayLeg" style="margin-top: 8px;">
+                                        <i class="fa-solid fa-plus"></i> 新增關卡 (串關)
+                                    </button>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group col-4">
+                                        <label for="bet-odds"><i class="fa-solid fa-percent text-gold"></i> 總賠率 (自動計算)</label>
+                                        <input type="number" id="bet-odds" step="0.01" placeholder="自動計算" readonly style="opacity: 0.8; background: var(--bg-hover); font-weight: 700; color: var(--text-primary);" required>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label for="bet-amount"><i class="fa-solid fa-dollar-sign text-green"></i> 下注總本金</label>
+                                        <input type="number" id="bet-amount" min="1" placeholder="例如：500" required>
+                                    </div>
+                                    <div class="form-group col-4">
+                                        <label for="bet-date"><i class="fa-solid fa-calendar"></i> 下注日期</label>
+                                        <input type="date" id="bet-date" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fa-solid fa-users text-blue"></i> 誰出錢 (投注人分配)</label>
+                                    <div class="allocation-type-selector">
+                                        <label class="radio-label">
+                                            <input type="radio" name="allocation-type" value="equal" checked>
+                                            <span>均分</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="allocation-type" value="each-100">
+                                            <span>每人 100 元</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="allocation-type" value="ratio">
+                                            <span>比例分攤 (%)</span>
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="allocation-type" value="custom">
+                                            <span>自訂金額 (元)</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="bettor-list-container" id="bettor-allocation-list">
+                                        <!-- Dynamic list of members with inputs for allocation -->
+                                    </div>
+                                    <div id="allocation-warning" class="allocation-warning error-text hidden">
+                                        ⚠️ 分配總額不等於下注總本金！
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="bet-note"><i class="fa-solid fa-sticky-note"></i> 備註 (選填)</label>
+                                    <input type="text" id="bet-note" placeholder="例如：台灣運彩單號 123456">
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="reset" class="btn btn-secondary">重設</button>
+                                    <button type="submit" class="btn btn-primary" id="btnSubmitBet">確認登記並扣款</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tab: History (所有注單與開獎) -->
+                <section id="tab-history" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📋 所有歷史注單</h3>
+                            <div class="filter-bar">
+                                <div class="btn-group" id="filter-status-group">
+                                    <button class="btn btn-sm btn-filter active" data-status="all">全部</button>
+                                    <button class="btn btn-sm btn-filter" data-status="pending">未開獎</button>
+                                    <button class="btn btn-sm btn-filter" data-status="won">中獎 🏆</button>
+                                    <button class="btn btn-sm btn-filter" data-status="lost">未中獎 ❌</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>賽事與玩法</th>
+                                            <th>賠率</th>
+                                            <th>本金 / 預估獎金</th>
+                                            <th>下注成員</th>
+                                            <th>狀態</th>
+                                            <th>備註</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="history-bets-list">
+                                        <!-- Dynamic bets -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tab: Summary (對帳與結算) -->
+                <section id="tab-summary" class="tab-content">
+                    <div class="dashboard-row">
+                        <!-- Left: Debt settling matrix -->
+                        <div class="dashboard-col col-6 card">
+                            <div class="card-header">
+                                <h3>💵 目前餘額結清方案</h3>
+                                <span class="badge badge-info">誰該給誰錢</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="help-text">
+                                    此方案為<b>「清帳模式」</b>。
+                                    小白是代購人，保管著所有人的可用餘額。
+                                    如果要將目前的帳目全部結清（退款給朋友，或向朋友收錢使餘額歸零），應進行以下款項轉移：
+                                </p>
+                                <div class="settlement-diagram-container" id="settlement-results-container">
+                                    <!-- Dynamic settlement flow diagram -->
+                                </div>
+                                <div class="settlement-actions mt-4">
+                                    <button class="btn btn-success w-100" id="btnSettleAll">
+                                        <i class="fa-solid fa-check-double"></i> 模擬全部清帳 (將所有餘額歸零)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Group financial stats -->
+                        <div class="dashboard-col col-6 card">
+                            <div class="card-header">
+                                <h3>📈 財務收支明細</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="financial-summary-list" id="financial-summary-list">
+                                    <!-- Dynamic summary items -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Modal: Add Member -->
+    <div id="modalAddMember" class="modal">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <h3>新增成員</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="add-member-form">
+                    <div class="form-group">
+                        <label for="new-member-name">成員名稱</label>
+                        <input type="text" id="new-member-name" placeholder="請輸入名字 (例如：小明)" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-member-init-deposit">初始入金金額 (非必填，預設為 0)</label>
+                        <input type="number" id="new-member-init-deposit" placeholder="例如：1000" min="0">
+                        <small class="form-text">如果新增成員時就已經給小白錢，可在此填寫。</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal-btn">取消</button>
+                        <button type="submit" class="btn btn-primary">確認新增</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Deposit/Withdraw -->
+    <div id="modalTransaction" class="modal">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <h3 id="transaction-modal-title">入金 / 出金登記</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="transaction-form">
+                    <input type="hidden" id="trans-member-id">
+                    
+                    <div class="form-group">
+                        <label>成員</label>
+                        <input type="text" id="trans-member-name" readonly class="form-control-plaintext">
+                    </div>
+
+                    <div class="form-group">
+                        <label>交易類型</label>
+                        <div class="transaction-type-selector">
+                            <label class="radio-label type-deposit">
+                                <input type="radio" name="trans-type" value="deposit" checked>
+                                <span><i class="fa-solid fa-arrow-down-long"></i> 入金 (給小白錢)</span>
+                            </label>
+                            <label class="radio-label type-withdraw">
+                                <input type="radio" name="trans-type" value="withdraw">
+                                <span><i class="fa-solid fa-arrow-up-long"></i> 出金 (拿回錢)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trans-amount">金額 (元)</label>
+                        <input type="number" id="trans-amount" placeholder="請輸入金額" min="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trans-note">備註</label>
+                        <input type="text" id="trans-note" placeholder="例如：街口轉帳 / 現金">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal-btn">取消</button>
+                        <button type="submit" class="btn btn-primary" id="btnSubmitTrans">確認送出</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Settle Single Bet -->
+    <div id="modalSettleBet" class="modal">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <h3>運彩開獎結算</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="settle-bet-form">
+                    <input type="hidden" id="settle-bet-id">
+                    <div class="bet-details-box" id="settle-bet-details">
+                        <!-- Bet description here -->
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>開獎結果</label>
+                        <div class="result-selector">
+                            <label class="result-option opt-won">
+                                <input type="radio" name="settle-result" value="won" checked>
+                                <span class="content">
+                                    <i class="fa-solid fa-trophy"></i>
+                                    <strong>中獎 (贏錢)</strong>
+                                    <span class="desc">本金扣除，獎金發放至成員錢包</span>
+                                </span>
+                            </label>
+                            <label class="result-option opt-lost">
+                                <input type="radio" name="settle-result" value="lost">
+                                <span class="content">
+                                    <i class="fa-solid fa-circle-xmark"></i>
+                                    <strong>未中獎 (輸錢)</strong>
+                                    <span class="desc">本金已扣除，無獎金</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="settle-won-amount-group">
+                        <label for="settle-won-amount">最終總獎金 (元)</label>
+                        <input type="number" id="settle-won-amount" min="0" placeholder="會根據賠率自動計算，亦可手動修正">
+                        <small class="form-text">預設為 <b>投注總金額 * 賠率</b>。如果有小數點，會無條件捨去至整數。</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal-btn">取消</button>
+                        <button type="submit" class="btn btn-primary">確認開獎</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Cloud Synchronization Settings -->
+    <div id="modalSettings" class="modal">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <h3>⚙️ 雲端同步設定 (Supabase)</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p class="help-text" style="margin-bottom: 16px;">
+                    將本網站推上 GitHub Pages 後，為了讓大家存取同一份即時資料，你需要啟用 Supabase 雲端資料庫。
+                    <br><span class="text-green">💡 金鑰會保存在你的瀏覽器中，不會上傳到 GitHub 公開 Repo，保障安全。</span>
+                </p>
+                <form id="settings-form">
+                    <div class="form-group">
+                        <label for="settings-supa-url">Supabase URL</label>
+                        <input type="text" id="settings-supa-url" placeholder="https://xxxxxx.supabase.co" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="settings-supa-key">Supabase Anon Key</label>
+                        <input type="text" id="settings-supa-key" placeholder="eyJhbGciOi..." required>
+                    </div>
+                    
+                    <div class="cloud-status-indicator mb-3 p-3 bg-secondary rounded" id="cloud-status-box" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px; font-size: 13px;">
+                        狀態：<span id="cloud-status-text" class="text-secondary">未連線 (使用本地 LocalStorage 儲存)</span>
+                    </div>
+
+                    <div class="form-actions" style="margin-top: 16px; display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; width: 100%; gap: 10px;">
+                            <button type="button" class="btn btn-secondary" id="btnTestCloud" style="flex: 1;">
+                                <i class="fa-solid fa-plug"></i> 測試並連線
+                            </button>
+                            <button type="button" class="btn btn-danger" id="btnClearCloud" style="flex: 1; background: var(--color-red); color: white;">
+                                <i class="fa-solid fa-trash-can"></i> 清除設定
+                            </button>
+                        </div>
+                        <button type="button" class="btn btn-share-line w-100" id="btnShareCloudLink">
+                            <i class="fa-solid fa-share-nodes"></i> 複製同步分享連結給朋友
+                        </button>
+                        <button type="button" class="btn btn-danger w-100" id="btnResetCloudDb" style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--color-red); color: var(--color-red); margin-top: 8px;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> 重設雲端資料庫 (清空為 0)
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Core App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
